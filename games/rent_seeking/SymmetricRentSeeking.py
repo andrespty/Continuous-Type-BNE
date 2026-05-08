@@ -34,6 +34,7 @@ class SymmetricRentSeeking(Game):
 
     def loss_fn(self):
         if self._n_players == 2:
+            @tf.keras.utils.register_keras_serializable()
             class CustomLoss(EquilibriumLoss):
                 def func_to_be_integrated2(self, actions):
                     actions_1 = tf.reshape(actions, [-1, 1, 1])
@@ -62,6 +63,7 @@ class SymmetricRentSeeking(Game):
                     return tf.reduce_mean(eng_dual + eng_dual2) 
             return CustomLoss(n_players=self._n_players, isSymmetric=True)
         elif self._n_players == 3:
+            @tf.keras.utils.register_keras_serializable()
             class CustomLossP3(EquilibriumLoss):
                 def __init__(self, name='custom_loss', alpha=1e-5, m=250, **kwargs):
                     super().__init__(name=name, **kwargs)

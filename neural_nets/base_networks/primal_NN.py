@@ -1,6 +1,20 @@
 import tensorflow as tf
 from tensorflow.keras.constraints import UnitNorm
 
+@tf.keras.utils.register_keras_serializable()
+class ScalingLayer(tf.keras.layers.Layer):
+    def __init__(self, scaling_factor, **kwargs):
+        super().__init__(**kwargs)
+        self.scaling_factor = scaling_factor
+
+    def call(self, x):
+        return x * self.scaling_factor
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({'scaling_factor': self.scaling_factor})
+        return config
+
 class PrimalNet:
     def __init__(self, 
         input_dim=1, 
@@ -28,5 +42,5 @@ class PrimalNet:
         x = tf.keras.layers.Dense(hidden, activation='tanh', kernel_initializer=init, kernel_constraint=kernel_c, bias_constraint=bias_c, kernel_regularizer=reg, name='dense_6')(x)
         x = tf.keras.layers.Dense(hidden, activation='tanh', kernel_initializer=init, kernel_constraint=kernel_c, bias_constraint=bias_c, kernel_regularizer=reg, name='dense_7')(x)
         x = tf.keras.layers.Dense(output_dim, activation='sigmoid', kernel_initializer=init, kernel_constraint=kernel_c, bias_constraint=bias_c, kernel_regularizer=reg, name='output_layer')(x)
-        outputs = tf.keras.layers.Lambda(lambda x: x * scaling_factor, name='scaling_layer')(x)
+        outputs = ScalingLayer(scaling_factor, name='scaling_layer')(x)
         return tf.keras.Model(inputs=inputs, outputs=outputs, name=name)

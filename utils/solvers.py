@@ -3,12 +3,13 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
-
+from neural_nets.base_networks.dual_NN import DualNet
 
 class Solver:
     """Base solver — handles compile, evaluate, save, checkpoint."""
 
     def __init__(self, game: Game):
+        self.game = game
         self.pdn = game.nn_model()
         self.model = self.pdn.model
         self.optimizer = game.optimizer()
@@ -43,19 +44,32 @@ class Solver:
             print(f"LR:                   {lr.numpy()}")
         return energy
 
-    def save(self, path):
+    def save(self, path:str, ckpt:str):
         os.makedirs(path, exist_ok=True)
-        self.model.save(path, include_optimizer=True)
+        self.model.save(os.path.join(path, 'model.keras'), include_optimizer=True)
+        checkpoint = tf.train.Checkpoint(model=self.model, optimizer=self.model.optimizer)
+        checkpoint.write(os.path.join(path, 'checkpoint_dir', ckpt))
         if self.training_data is not None:
             np.save(os.path.join(path, 'training_data.npy'), self.training_data.numpy())
         print(f"Saved to {path}")
 
-    def checkpoint(self, path, name='ckpt'):
-        os.makedirs(path, exist_ok=True)
-        ckpt = tf.train.Checkpoint(model=self.model, optimizer=self.optimizer)
-        ckpt.write(os.path.join(path, name))
-        print(f"Checkpoint written to {os.path.join(path, name)}")
+    def load(self, path: str, checkpoint: str):
+        model = tf.keras.models.load_model(
+            os.path.join(path, 'model.keras'), 
+            custom_objects={
+                'DualNet': DualNet,
+                'CustomLoss': self.game.loss_fn()
+            },
+            safe_mode=False
+        )
+        optimizer = model.optimizer
 
+        ckpt = tf.train.Checkpoint(model=model, optimizer=optimizer)
+        ckpt.restore(os.path.join(path, 'checkpoint_dir', checkpoint)).expect_partial()
+        
+        self.model = model
+        self.training_data = np.load(os.path.join(path, 'training_data.npy')) if os.path.exists(os.path.join(path, 'training_data.npy')) else None
+        print(f"Model loaded from {path} with checkpoint {checkpoint}")
 
 class SymmetricSolver(Solver):
 

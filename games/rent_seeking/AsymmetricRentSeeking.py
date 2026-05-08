@@ -28,6 +28,7 @@ class AsymmetricRentSeeking(Game):
         return PrimalDualAsymmetricNet(input_dim=[1,1], output_dim=[1,1], constraints=[2,2], hidden=[64, 64], alpha=1e-6, seed=15)
 
     def loss_fn(self):
+        @tf.keras.utils.register_keras_serializable()
         class LossA2(EquilibriumLoss):
             def func_to_be_integrated2(self, actions):
                 actions_1 = tf.reshape(actions[:,0], [-1,1])

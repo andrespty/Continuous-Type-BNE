@@ -2,6 +2,22 @@ import tensorflow as tf
 from neural_nets.base_networks.dual_NN import DualNet
 from neural_nets.base_networks.primal_NN import PrimalNet
 
+
+@tf.keras.utils.register_keras_serializable()
+class SliceLayer(tf.keras.layers.Layer):
+    def __init__(self, start, end, **kwargs):
+        super().__init__(**kwargs)
+        self.start = start
+        self.end = end
+
+    def call(self, x):
+        return x[:, self.start:self.end]
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({'start': self.start, 'end': self.end})
+        return config
+
 class PrimalDualAsymmetricNet:
     def __init__(self, input_dim=[1,1], output_dim=[1,1], constraints=[2,2], hidden=[64, 64], alpha=1e-6, seed=15):
         self.primal_net_p1 = PrimalNet(input_dim[0], output_dim[0], hidden[0], alpha=alpha, seed=seed, scaling_factor=100, name="Primal_P1")
@@ -13,8 +29,8 @@ class PrimalDualAsymmetricNet:
     def _build(self, input_dim):
         inputs = tf.keras.Input(shape=(input_dim,), name='main_input_layer')
 
-        slice_1 =  tf.keras.layers.Lambda(lambda x: x[:, 0:1], name='slice_1')(inputs)
-        slice_2 =  tf.keras.layers.Lambda(lambda x: x[:, 1:2], name='slice_2')(inputs)
+        slice_1 = SliceLayer(0, 1, name='slice_1')(inputs)
+        slice_2 = SliceLayer(1, 2, name='slice_2')(inputs)
         primal_p1 = self.primal_net_p1.model(slice_1)
         primal_p2 = self.primal_net_p2.model(slice_2)
         
