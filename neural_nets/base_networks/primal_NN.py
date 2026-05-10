@@ -3,16 +3,21 @@ from tensorflow.keras.constraints import UnitNorm
 
 @tf.keras.utils.register_keras_serializable()
 class ScalingLayer(tf.keras.layers.Layer):
-    def __init__(self, scaling_factor, **kwargs):
+    def __init__(self, min_val, max_val, **kwargs):
         super().__init__(**kwargs)
-        self.scaling_factor = scaling_factor
+        self.min_val = min_val
+        self.max_val = max_val
 
     def call(self, x):
-        return x * self.scaling_factor
+        # x is already sigmoid output, i.e. x in (0, 1)
+        return self.min_val + (self.max_val - self.min_val) * x
 
     def get_config(self):
         config = super().get_config()
-        config.update({'scaling_factor': self.scaling_factor})
+        config.update({
+            'min_val': self.min_val,
+            'max_val': self.max_val
+        })
         return config
 
 class PrimalNet:
@@ -23,7 +28,7 @@ class PrimalNet:
         name="Symmetric",
         alpha=1e-6, 
         seed=15,
-        scaling_factor=100
+        scaling_factor=[0,100]
     ):
         self.model = self._build(input_dim, output_dim, hidden, name, alpha, seed, scaling_factor)
 
@@ -42,5 +47,5 @@ class PrimalNet:
         x = tf.keras.layers.Dense(hidden, activation='tanh', kernel_initializer=init, kernel_constraint=kernel_c, bias_constraint=bias_c, kernel_regularizer=reg, name='dense_6')(x)
         x = tf.keras.layers.Dense(hidden, activation='tanh', kernel_initializer=init, kernel_constraint=kernel_c, bias_constraint=bias_c, kernel_regularizer=reg, name='dense_7')(x)
         x = tf.keras.layers.Dense(output_dim, activation='sigmoid', kernel_initializer=init, kernel_constraint=kernel_c, bias_constraint=bias_c, kernel_regularizer=reg, name='output_layer')(x)
-        outputs = ScalingLayer(scaling_factor, name='scaling_layer')(x)
+        outputs = ScalingLayer(scaling_factor[0], scaling_factor[1], name='scaling_layer')(x)
         return tf.keras.Model(inputs=inputs, outputs=outputs, name=name)

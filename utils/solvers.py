@@ -31,10 +31,10 @@ class Solver:
     def plot_strategy(self, type_bounds=None):
         raise NotImplementedError
 
-    def evaluate(self):
+    def evaluate(self, batch_size=500):
         if self.training_data is None:
             raise RuntimeError("Call fit() before evaluate().")
-        energy = self.model.evaluate(self.training_data, self.training_data)
+        energy = self.model.evaluate(self.training_data, self.training_data, batch_size=batch_size)
         print(f"Energy:               {energy}")
         print(f"Optimizer iterations: {self.model.optimizer.iterations.numpy()}")
         lr = self.model.optimizer.learning_rate
