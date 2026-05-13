@@ -71,6 +71,11 @@ class Solver:
         self.training_data = np.load(os.path.join(path, 'training_data.npy')) if os.path.exists(os.path.join(path, 'training_data.npy')) else None
         print(f"Model loaded from {path} with checkpoint {checkpoint}")
 
+    def get_strategy_points(self, type_bounds, n_points, output_index=0):
+        input_values = np.linspace(*type_bounds, n_points).reshape(-1, 1)
+        outputs = self.model(input_values)[:, output_index].numpy().reshape(-1, 1)
+        return input_values, outputs
+
 class SymmetricSolver(Solver):
 
     def _sample_types(self, n_samples, type_bounds=(0.001, 1.001)):
